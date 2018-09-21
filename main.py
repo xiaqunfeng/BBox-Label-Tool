@@ -1,12 +1,13 @@
 from tkinter import *
 from tkinter import filedialog
+from tkinter import messagebox
 from PIL import Image, ImageTk
 import os
 import glob
 import random
 
 # colors for the bboxes
-COLORS = ['red', 'blue', 'yellow', 'pink', 'cyan', 'green', 'black']
+COLORS = ['red', 'blue','pink', 'cyan', 'green', 'black']
 # image sizes for the examples
 SIZE = 256, 256
 
@@ -46,23 +47,25 @@ class LabelTool():
 
         # ----------------- GUI stuff ---------------------
         # dir entry & load
-        #self.label = Label(self.frame, text = "Image Dir:")
-        #self.label.grid(row = 0, column = 0, sticky = E)
-        #self.entry = Entry(self.frame)
-        #self.entry.grid(row = 0, column = 1, sticky = W+E)
-        #self.ldBtn = Button(self.frame, text = "Load", command = self.loadDir)
-        #self.ldBtn.grid(row = 0, column = 2, sticky = W+E)
-
+        # input image dir button
         self.srcDirBtn = Button(self.frame, text="Image input folder", command=self.selectSrcDir)
-        self.srcDirBtn.grid(row=0, column=0, sticky=E)
+        self.srcDirBtn.grid(row=0, column=0)
+        
+        # input image dir entry
         self.svSourcePath = StringVar()
         self.entrySrc = Entry(self.frame, textvariable=self.svSourcePath)
         self.entrySrc.grid(row=0, column=1, sticky=W+E)
         self.svSourcePath.set(os.getcwd())
-        self.ldBtn = Button(self.frame, text="Load", command=self.loadDir)
-        self.ldBtn.grid(row=0, column=2, sticky=W+E)
+
+        # load button
+        self.ldBtn = Button(self.frame, text="Load Dir", command=self.loadDir)
+        self.ldBtn.grid(row=0, column=2, rowspan=2, columnspan=2, padx=2, pady=2, ipadx=5, ipady=5)
+
+        # label file save dir button
         self.desDirBtn = Button(self.frame, text="Label output folder", command=self.selectDesDir)
-        self.desDirBtn.grid(row=1, column=0, sticky=E)
+        self.desDirBtn.grid(row=1, column=0)
+
+        # label file save dir entry
         self.svDestinationPath = StringVar()
         self.entryDes = Entry(self.frame, textvariable=self.svDestinationPath)
         self.entryDes.grid(row=1, column=1, sticky=W+E)
@@ -121,10 +124,6 @@ class LabelTool():
         self.frame.columnconfigure(1, weight = 1)
         self.frame.rowconfigure(4, weight = 1)
 
-        # for debugging
-##        self.setImage()
-##        self.loadDir()
-
     def selectSrcDir(self):
         path = filedialog.askdirectory(title="Select image source folder", initialdir=self.svSourcePath.get())
         self.svSourcePath.set(path)
@@ -135,19 +134,15 @@ class LabelTool():
         self.svDestinationPath.set(path)
         return
 
-    def loadDir(self, dbg = False):
-        if not dbg:
-            #s = self.entry.get()
-            self.parent.focus()
-            #self.category = int(s)
-        else:
-            s = r'D:\workspace\python\labelGUI'
-##        if not os.path.isdir(s):
-##            tkMessageBox.showerror("Error!", message = "The specified dir doesn't exist!")
-##            return
+    def loadDir(self):
+
+        self.parent.focus()
         # get image list
         #self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
         self.imageDir = self.svSourcePath.get()
+        if not os.path.isdir(self.imageDir):
+            messagebox.showerror("Error!", message = "The specified dir doesn't exist!")
+            return
         self.imageList = glob.glob(os.path.join(self.imageDir, '*.JPEG'))
         if len(self.imageList) == 0:
             print('No .JPEG images found in the specified dir!')
@@ -157,7 +152,7 @@ class LabelTool():
         self.cur = 1
         self.total = len(self.imageList)
 
-         # set up output dir
+        # set up output dir
         #self.outDir = os.path.join(r'./Labels', '%03d' %(self.category))
         self.outDir = self.svDestinationPath.get()
         if not os.path.exists(self.outDir):
@@ -173,7 +168,7 @@ class LabelTool():
         self.egList = []
         random.shuffle(filelist)
         for (i, f) in enumerate(filelist):
-            if i == 3:
+            if i == 1:
                 break
             im = Image.open(f)
             r = min(SIZE[0] / im.size[0], SIZE[1] / im.size[1])
@@ -217,6 +212,8 @@ class LabelTool():
                     self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
 
     def saveImage(self):
+        if self.labelfilename == '':
+            return
         with open(self.labelfilename, 'w') as f:
             f.write('%d\n' %len(self.bboxList))
             for bbox in self.bboxList:
