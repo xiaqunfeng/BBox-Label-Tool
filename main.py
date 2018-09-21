@@ -7,7 +7,7 @@ import glob
 import random
 
 # colors for the bboxes
-COLORS = ['red', 'blue','pink', 'cyan', 'green', 'black']
+COLORS = ['red', 'blue','pink', 'cyan', 'green', 'black', 'olive', 'teal']
 # image sizes for the examples
 SIZE = 256, 256
 
@@ -77,8 +77,8 @@ class LabelTool():
         self.mainPanel.bind("<Motion>", self.mouseMove)
         self.parent.bind("<Escape>", self.cancelBBox)  # press <Espace> to cancel current bbox
         self.parent.bind("s", self.cancelBBox)
-        self.parent.bind("a", self.prevImage) # press 'a' to go backforward
-        self.parent.bind("d", self.nextImage) # press 'd' to go forward
+        self.parent.bind("p", self.prevImage) # press 'p' to go backforward
+        self.parent.bind("n", self.nextImage) # press 'n' to go forward
         self.mainPanel.grid(row = 2, column = 1, rowspan = 4, sticky = W+N)
 
         # showing bbox info & delete bbox
@@ -135,7 +135,6 @@ class LabelTool():
         return
 
     def loadDir(self):
-
         self.parent.focus()
         # get image list
         #self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
@@ -143,7 +142,12 @@ class LabelTool():
         if not os.path.isdir(self.imageDir):
             messagebox.showerror("Error!", message = "The specified dir doesn't exist!")
             return
-        self.imageList = glob.glob(os.path.join(self.imageDir, '*.JPEG'))
+
+        extlist = ["*.JPEG", "*.jpg", "*.png", "*.bmp"]
+        for e in extlist:
+            filelist = glob.glob(os.path.join(self.imageDir, e))
+            self.imageList.extend(filelist)
+        #self.imageList = glob.glob(os.path.join(self.imageDir, '*.JPEG'))
         if len(self.imageList) == 0:
             print('No .JPEG images found in the specified dir!')
             return
@@ -191,7 +195,9 @@ class LabelTool():
 
         # load labels
         self.clearBBox()
-        self.imagename = os.path.split(imagepath)[-1].split('.')[0]
+        #self.imagename = os.path.split(imagepath)[-1].split('.')[0]
+        fullfilename = os.path.basename(imagepath)
+        self.imagename, _ = os.path.splitext(fullfilename)
         labelname = self.imagename + '.txt'
         self.labelfilename = os.path.join(self.outDir, labelname)
         bbox_cnt = 0
