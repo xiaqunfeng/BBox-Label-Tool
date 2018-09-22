@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
+from tkinter import ttk
 from PIL import Image, ImageTk
 import os
 import glob
@@ -32,6 +33,9 @@ class LabelTool():
         self.imagename = ''
         self.labelfilename = ''
         self.tkimg = None
+        self.currentLabelclass = ''
+        self.cla_can_temp = []
+        self.classcandidate_filename = 'class.txt'
 
         # initialize mouse state
         self.STATE = {}
@@ -81,15 +85,29 @@ class LabelTool():
         self.parent.bind("n", self.nextImage) # press 'n' to go forward
         self.mainPanel.grid(row = 2, column = 1, rowspan = 4, sticky = W+N)
 
+        # choose class
+        self.classname = StringVar()
+        self.classcandidate = ttk.Combobox(self.frame, state='readonly', textvariable=self.classname)
+        self.classcandidate.grid(row=2, column=2)
+        if os.path.exists(self.classcandidate_filename):
+            with open(self.classcandidate_filename) as cf:
+                for line in cf.readlines():
+                    self.cla_can_temp.append(line.strip('\n'))
+        self.classcandidate['values'] = self.cla_can_temp
+        self.classcandidate.current(0)
+        self.currentLabelclass = self.classcandidate.get()
+        self.btnclass = Button(self.frame, text='ComfirmClass', command=self.setClass)
+        self.btnclass.grid(row=2, column=3, sticky=W+E)
+
         # showing bbox info & delete bbox
         self.lb1 = Label(self.frame, text = 'Bounding boxes:')
-        self.lb1.grid(row = 2, column = 2,  sticky = W+N)
+        self.lb1.grid(row = 3, column = 2,  sticky = W+N)
         self.listbox = Listbox(self.frame, width = 22, height = 12)
-        self.listbox.grid(row = 3, column = 2, sticky = N)
+        self.listbox.grid(row = 4, column = 2, sticky = N+S)
         self.btnDel = Button(self.frame, text = 'Delete', command = self.delBBox)
-        self.btnDel.grid(row = 4, column = 2, sticky = W+E+N)
+        self.btnDel.grid(row = 4, column = 3, sticky = W+E+N)
         self.btnClear = Button(self.frame, text = 'ClearAll', command = self.clearBBox)
-        self.btnClear.grid(row = 5, column = 2, sticky = W+E+N)
+        self.btnClear.grid(row = 4, column = 3, sticky = W+E+S)
 
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
@@ -109,7 +127,7 @@ class LabelTool():
 
         # example pannel for illustration
         self.egPanel = Frame(self.frame, border = 10)
-        self.egPanel.grid(row = 2, column = 0, rowspan = 5, sticky = N)
+        self.egPanel.grid(row = 3, column = 0, rowspan = 5, sticky = N)
         self.tmpLabel2 = Label(self.egPanel, text = "Examples:")
         self.tmpLabel2.pack(side = TOP, pady = 5)
         self.egLabels = []
@@ -188,6 +206,9 @@ class LabelTool():
         # load image
         imagepath = self.imageList[self.cur - 1]
         self.img = Image.open(imagepath)
+        size = self.img.size
+        self.factor = max(size[0]/1000, size[1]/1000., 1.)
+        self.img = self.img.resize((int(size[0]/self.factor), int(size[1]/self.factor)))
         self.tkimg = ImageTk.PhotoImage(self.img)
         self.mainPanel.config(width = max(self.tkimg.width(), 400), height = max(self.tkimg.height(), 400))
         self.mainPanel.create_image(0, 0, image = self.tkimg, anchor=NW)
@@ -207,7 +228,12 @@ class LabelTool():
                     if i == 0:
                         bbox_cnt = int(line.strip())
                         continue
-                    tmp = [int(t.strip()) for t in line.split()]
+                    #tmp = [int(t.strip()) for t in line.split()]
+                    tmp = line.split()
+                    tmp[0] = int(int(tmp[0])/self.factor)
+                    tmp[1] = int(int(tmp[1])/self.factor)
+                    tmp[2] = int(int(tmp[2])/self.factor)
+                    tmp[3] = int(int(tmp[3])/self.factor)
                     self.bboxList.append(tuple(tmp))
                     tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
                                                             tmp[2], tmp[3], \
@@ -223,7 +249,11 @@ class LabelTool():
         with open(self.labelfilename, 'w') as f:
             f.write('%d\n' %len(self.bboxList))
             for bbox in self.bboxList:
-                f.write(' '.join(map(str, bbox)) + '\n')
+                f.write("{} {} {} {} {}\n".format(int(int(bbox[0])*self.factor),
+                                                int(int(bbox[1])*self.factor),
+                                                int(int(bbox[2])*self.factor),
+                                                int(int(bbox[3])*self.factor), bbox[4]))
+                #f.write(' '.join(map(str, bbox)) + '\n')
         print('Image No. %d saved' %(self.cur))
 
 
@@ -299,6 +329,10 @@ class LabelTool():
             self.saveImage()
             self.cur = idx
             self.loadImage()
+
+    def setClass(self):
+        self.currentLabelclass = self.classcandidate.get()
+        print('set label class to : %s' % self.currentLabelclass)
 
 if __name__ == '__main__':
     root = Tk()
