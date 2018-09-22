@@ -8,7 +8,7 @@ import glob
 import random
 
 # colors for the bboxes
-COLORS = ['red', 'blue','pink', 'cyan', 'green', 'black', 'olive', 'teal']
+COLORS = ['red', 'blue','pink', 'cyan', 'green', 'black']
 # image sizes for the examples
 SIZE = 256, 256
 
@@ -161,7 +161,7 @@ class LabelTool():
             messagebox.showerror("Error!", message = "The specified dir doesn't exist!")
             return
 
-        extlist = ["*.JPEG", "*.jpg", "*.png", "*.bmp"]
+        extlist = ["*.JPEG", "*JPG", "*.jpg", "*.png", "*.bmp"]
         for e in extlist:
             filelist = glob.glob(os.path.join(self.imageDir, e))
             self.imageList.extend(filelist)
@@ -235,13 +235,16 @@ class LabelTool():
                     tmp[2] = int(int(tmp[2])/self.factor)
                     tmp[3] = int(int(tmp[3])/self.factor)
                     self.bboxList.append(tuple(tmp))
+                    color_index = (len(self.bboxList)-1) % len(COLORS)
                     tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
                                                             tmp[2], tmp[3], \
                                                             width = 2, \
-                                                            outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
+                                                            outline = COLORS[color_index])
+                                                            #outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
                     self.bboxIdList.append(tmpId)
-                    self.listbox.insert(END, '(%d, %d) -> (%d, %d)' %(tmp[0], tmp[1], tmp[2], tmp[3]))
-                    self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
+                    self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' %(tmp[4], tmp[0], tmp[1], tmp[2], tmp[3]))
+                    self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[color_index])
+                    #self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
 
     def saveImage(self):
         if self.labelfilename == '':
@@ -263,10 +266,10 @@ class LabelTool():
         else:
             x1, x2 = min(self.STATE['x'], event.x), max(self.STATE['x'], event.x)
             y1, y2 = min(self.STATE['y'], event.y), max(self.STATE['y'], event.y)
-            self.bboxList.append((x1, y1, x2, y2))
+            self.bboxList.append((x1, y1, x2, y2, self.currentLabelclass))
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
-            self.listbox.insert(END, '(%d, %d) -> (%d, %d)' %(x1, y1, x2, y2))
+            self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' %(self.currentLabelclass, x1, y1, x2, y2))
             self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
         self.STATE['click'] = 1 - self.STATE['click']
 
@@ -282,6 +285,7 @@ class LabelTool():
         if 1 == self.STATE['click']:
             if self.bboxId:
                 self.mainPanel.delete(self.bboxId)
+            COLOR_INDEX = len(self.bboxIdList) % len(COLORS)
             self.bboxId = self.mainPanel.create_rectangle(self.STATE['x'], self.STATE['y'], \
                                                             event.x, event.y, \
                                                             width = 2, \
