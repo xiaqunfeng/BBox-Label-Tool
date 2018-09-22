@@ -161,7 +161,7 @@ class LabelTool():
             messagebox.showerror("Error!", message = "The specified dir doesn't exist!")
             return
 
-        extlist = ["*.JPEG", "*JPG", "*.jpg", "*.png", "*.bmp"]
+        extlist = ["*.JPEG", "*.jpeg", "*JPG", "*.jpg", "*.PNG", "*.png", "*.BMP", "*.bmp"]
         for e in extlist:
             filelist = glob.glob(os.path.join(self.imageDir, e))
             self.imageList.extend(filelist)
